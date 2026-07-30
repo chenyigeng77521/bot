@@ -1,0 +1,71 @@
+#!/bin/bash
+# ============================================================
+# check - 检查 HOME 目录下 profile 文件中是否配置了
+#         切换到当前目录的快捷 alias 命令
+# ============================================================
+
+set -e
+
+CURRENT_DIR=$(pwd)
+HOME_DIR="$HOME"
+SEP="============================================================"
+
+echo "$SEP"
+echo "  当前工作目录: $CURRENT_DIR"
+
+# --------------------------------------------------
+# 扫描 HOME 下的 profile 文件
+# --------------------------------------------------
+echo "$SEP"
+echo "  检查 HOME 下 profile 文件中是否有切换到当前目录的 alias"
+echo "$SEP"
+
+PROFILE_FILES=(
+    "$HOME_DIR/.bashrc"
+    "$HOME_DIR/.bash_profile"
+    "$HOME_DIR/.profile"
+    "$HOME_DIR/.zshrc"
+    "$HOME_DIR/.zprofile"
+    "$HOME_DIR/.aliases"
+    "$HOME_DIR/.alias"
+    "$HOME_DIR/.bash_aliases"
+)
+
+FOUND_ANY=0
+
+for pf in "${PROFILE_FILES[@]}"; do
+    if [ ! -f "$pf" ]; then
+        continue
+    fi
+
+    # 精确匹配 alias xxx='cd /exact/path' — 路径后紧跟引号结束，排除子目录
+    matched=$(grep -n "cd ${CURRENT_DIR}['\"]" "$pf" 2>/dev/null || true)
+
+    if [ -n "$matched" ]; then
+        FOUND_ANY=1
+        filename=$(basename "$pf")
+        echo "  [$filename]  找到匹配："
+        echo "$matched" | sed 's/^/  │  /'
+        echo ""
+    fi
+done
+
+if [ "$FOUND_ANY" -eq 0 ]; then
+    echo "  未找到切换到当前目录的 alias，建议添加："
+    echo ""
+    # 自动生成建议的别名名：取当前目录最后两级路径的组合
+    dirname_short=$(echo "$CURRENT_DIR" | sed 's|.*/||')
+    parent_short=$(echo "$CURRENT_DIR" | sed 's|/[^/]*$||' | sed 's|.*/||')
+    if [ -n "$parent_short" ] && [ "$parent_short" != "$dirname_short" ]; then
+        suggested="cd${parent_short}${dirname_short}"
+    else
+        suggested="cd${dirname_short}"
+    fi
+    suggested=$(echo "$suggested" | tr '[:upper:]' '[:lower:]')
+    echo "      alias $suggested='cd $CURRENT_DIR'"
+    echo ""
+    echo "  将上面这行追加到 ~/.bashrc 或 ~/.bash_profile 即可。"
+fi
+
+echo ""
+echo "  完成。"
