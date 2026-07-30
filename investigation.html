@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校园生活小调查</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f0f4f8; color: #2d3748; line-height: 1.7; min-height: 100vh; }
+.container { max-width: 800px; margin: 0 auto; padding: 24px 20px 60px; display: none; }
+
+/* ===== 开始欢迎页 ===== */
+.welcome-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.welcome-box { text-align: center; color: #fff; padding: 40px; }
+.welcome-box h1 { font-size: 42px; margin-bottom: 12px; letter-spacing: 2px; }
+.welcome-box .welcome-sub { font-size: 18px; opacity: 0.85; margin-bottom: 40px; }
+.start-btn { background: #fff; color: #667eea; border: none; padding: 16px 60px; border-radius: 50px; font-size: 20px; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+.start-btn:active { transform: translateY(0); }
+
+/* ===== 姓名年龄弹窗 ===== */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal-box { background: #fff; border-radius: 16px; padding: 36px 32px; width: 400px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; }
+.modal-box h3 { font-size: 22px; color: #2d3748; margin-bottom: 24px; }
+.modal-field { margin-bottom: 16px; text-align: left; }
+.modal-field label { display: block; font-size: 14px; color: #718096; margin-bottom: 6px; font-weight: 600; }
+.modal-field input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; transition: border-color 0.2s; outline: none; }
+.modal-field input:focus { border-color: #667eea; }
+.modal-confirm-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; padding: 14px 50px; border-radius: 50px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
+.modal-confirm-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(102,126,234,0.4); }
+.modal-error { color: #e53e3e; font-size: 13px; margin-top: 8px; display: none; }
+
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; text-align: center; padding: 36px 24px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 24px rgba(102,126,234,0.3); }
+.header h1 { font-size: 26px; margin-bottom: 8px; }
+.header p { opacity: 0.9; font-size: 14px; }
+
+.score-bar { display: none; }
+.score-bar .total { font-size: 20px; font-weight: 700; color: #667eea; }
+.score-bar .total .num { font-size: 36px; }
+.score-bar .detail { font-size: 13px; color: #718096; }
+.answer-toggle-btn { background: #48bb78; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+.answer-toggle-btn:hover { background: #38a169; }
+
+.section { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.section-title { font-size: 18px; font-weight: 700; color: #667eea; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #edf2f7; }
+.section-title .icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.section-meta { font-size: 12px; color: #a0aec0; margin-left: auto; }
+
+.question { padding: 16px 0; border-bottom: 1px solid #edf2f7; }
+.question:last-child { border-bottom: none; }
+.question-num { display: inline-block; background: #ebf4ff; color: #4a5568; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 10px; margin-bottom: 8px; }
+.question-text { font-size: 15px; font-weight: 500; margin-bottom: 12px; color: #2d3748; }
+.options { display: flex; flex-direction: column; gap: 6px; }
+.option { display: flex; align-items: flex-start; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+.option:hover { border-color: #a3bffa; background: #f7fafc; }
+.option.correct-reveal { border-color: #48bb78; background: #f0fff4; }
+.option.wrong-reveal { border-color: #fc8181; background: #fff5f5; }
+.option input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; margin: 0; }
+.option:has(input:checked) { border-color: #667eea; background: #ebf4ff; }
+.option-label { font-weight: 700; color: #667eea; min-width: 28px; font-size: 14px; }
+.option-text { font-size: 14px; color: #4a5568; flex: 1; }
+.option-icon { display: none; font-size: 18px; margin-left: 8px; }
+.correct-reveal .option-icon.correct-icon { display: inline; }
+.wrong-reveal .option-icon.wrong-icon { display: inline; }
+
+.essay-area { margin-top: 8px; }
+.essay-area textarea { width: 100%; min-height: 140px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; resize: vertical; transition: border-color 0.2s; }
+.essay-area textarea:focus { outline: none; border-color: #667eea; }
+
+.submit-wrap { text-align: center; margin-top: 24px; }
+.submit-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; padding: 14px 56px; border-radius: 30px; font-size: 17px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 16px rgba(102,126,234,0.4); }
+.submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(102,126,234,0.5); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.hint { text-align: center; font-size: 13px; color: #a0aec0; margin-top: 10px; }
+
+/* ---- Toast 提示 ---- */
+.toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 16px 36px; border-radius: 50px; font-size: 17px; font-weight: 600; letter-spacing: 2px; box-shadow: 0 8px 32px rgba(102,126,234,0.45); opacity: 0; transition: opacity 0.4s, transform 0.4s; transform: translateX(-50%) translateY(-20px); pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---- History Panel ---- */
+.history-panel { background: #fff; border-radius: 12px; padding: 24px; margin-top: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: none; max-height: 500px; overflow-y: auto; }
+.history-panel.show { display: block; }
+.history-panel h2 { font-size: 18px; color: #2d3748; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #edf2f7; position: sticky; top: 0; background: #fff; z-index: 1; }
+.clear-history-btn { background: #fc8181; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.clear-history-btn:hover { background: #f56565; transform: scale(1.03); }
+.history-entry { border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.history-entry-header { display: flex; align-items: stretch; background: #f7fafc; }
+.history-entry-info { flex: 1; display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; user-select: none; transition: background 0.2s; min-width: 0; }
+.history-entry-info:hover { background: #edf2f7; }
+.history-entry-info .chevron { transition: transform 0.3s; font-size: 12px; color: #a0aec0; flex-shrink: 0; }
+.history-entry.open .history-entry-info .chevron { transform: rotate(90deg); }
+.fill-btn { display: flex; align-items: center; justify-content: center; padding: 12px 20px; background: #667eea; color: #fff; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; flex-shrink: 0; }
+.fill-btn:hover { background: #5a67d8; }
+.fill-btn:active { background: #4c51bf; }
+.history-entry-body { display: none; padding: 12px 16px; border-top: 1px solid #edf2f7; max-height: 400px; overflow-y: auto; }
+.history-entry.open .history-entry-body { display: block; }
+
+.answer-row { padding: 10px 0; border-bottom: 1px solid #f7fafc; font-size: 14px; display: flex; gap: 12px; }
+.answer-row:last-child { border-bottom: none; }
+.answer-row .q-label { font-weight: 600; min-width: 60px; color: #667eea; }
+.answer-row .q-result { flex: 1; }
+.answer-row .q-result.correct { color: #38a169; }
+.answer-row .q-result.wrong { color: #e53e3e; }
+.answer-row .q-score { font-weight: 600; min-width: 40px; text-align: right; }
+
+.pwd-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
+.pwd-overlay.show { display: flex; }
+.pwd-box { background: #fff; padding: 32px; border-radius: 16px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-width: 360px; width: 90%; }
+.pwd-box h3 { margin-bottom: 8px; color: #2d3748; }
+.pwd-box p { font-size: 13px; color: #a0aec0; margin-bottom: 20px; }
+.pwd-box input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 18px; text-align: center; letter-spacing: 6px; }
+.pwd-box input:focus { outline: none; border-color: #667eea; }
+.pwd-box .pwd-btns { margin-top: 16px; display: flex; gap: 10px; justify-content: center; }
+.pwd-box .pwd-btns button { padding: 10px 24px; border-radius: 8px; font-size: 14px; cursor: pointer; border: none; }
+.pwd-box .pwd-btns .confirm { background: #667eea; color: #fff; }
+.pwd-box .pwd-btns .cancel { background: #e2e8f0; color: #4a5568; }
+.pwd-error { color: #e53e3e; font-size: 13px; margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+
+<!-- ===== 欢迎页 ===== -->
+<div class="welcome-overlay" id="welcomeOverlay">
+  <div class="welcome-box">
+    <h1>校园生活小调查</h1>
+    <p class="welcome-sub">猿辅导调查报告（学生必填）</p>
+    <button class="start-btn" onclick="showNameModal()">开始答题</button>
+  </div>
+</div>
+
+<!-- ===== 姓名年龄弹窗 ===== -->
+<div class="modal-overlay" id="nameModal">
+  <div class="modal-box">
+    <h3>请填写信息</h3>
+    <div class="modal-field">
+      <label>姓名</label>
+      <input type="text" id="inputName" placeholder="请输入你的姓名" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>年龄</label>
+      <input type="number" id="inputAge" placeholder="请输入你的年龄" min="1" max="120" autocomplete="off">
+    </div>
+    <p class="modal-error" id="modalError">请填写姓名和年龄</p>
+    <button class="modal-confirm-btn" onclick="confirmStart()">确认，开始答题</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">提交成功</div>
+<div class="container">
+
+<div class="header">
+  <h1 id="headerTitle">校园生活小调查</h1>
+  <p id="headerSub">猿辅导调查报告（学生必填）| 共 31 题，满分 100 分</p>
+</div>
+
+<form id="quizForm">
+
+<!-- ===== 同学关系 ===== -->
+<div class="section">
+  <div class="section-title"><span class="icon" style="background:#ebf8ff;color:#3182ce;">👥</span> 同学关系 <span class="section-meta">8 题 · 24 分</span></div>
+
+<div class="question" data-q="1" data-section="同学关系" data-correct="3">
+  <div class="question-num">第 1 题</div>
+  <div class="question-text">课间，几个同学聚在一起小声笑，看到你走过来就笑得更欢了。你最可能怎么处理？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q1" value="0"><span class="option-label">A</span><span class="option-text">当面走过去问："你们笑什么？"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q1" value="1"><span class="option-label">B</span><span class="option-text">不理他们，假装没听到，回自己座位</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q1" value="2"><span class="option-label">C</span><span class="option-text">找自己的朋友吐槽他们</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q1" value="3"><span class="option-label">D</span><span class="option-text">第二天找其中一个平时关系还行的同学私下问下情况</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="2" data-section="同学关系" data-correct="2">
+  <div class="question-num">第 2 题</div>
+  <div class="question-text">好朋友让你帮他抄作业，说"就这一次"。你不想抄但也不想失去这个朋友。怎么办？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q2" value="0"><span class="option-label">A</span><span class="option-text">直接拒绝，不抄，让 TA 自己想办法</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q2" value="1"><span class="option-label">B</span><span class="option-text">帮他抄一次，但下次想办法推掉</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q2" value="2"><span class="option-label">C</span><span class="option-text">跟他说"我不能帮你抄，但可以教你这道题怎么做"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q2" value="3"><span class="option-label">D</span><span class="option-text">表面答应但其实没抄，糊弄过去</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="3" data-section="同学关系" data-correct="2">
+  <div class="question-num">第 3 题</div>
+  <div class="question-text">你在班里有几个玩得不错的朋友，但最近发现他们在群里聊一些你没被邀请的话题，你有点失落。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q3" value="0"><span class="option-label">A</span><span class="option-text">直接在群里说"你们怎么不带我"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q3" value="1"><span class="option-label">B</span><span class="option-text">装作不知道，但开始疏远他们</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q3" value="2"><span class="option-label">C</span><span class="option-text">主动找个机会跟其中一个人单独聊聊，问问大家最近的状态</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q3" value="3"><span class="option-label">D</span><span class="option-text">在别的朋友那里说他们坏话</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="4" data-section="同学关系" data-correct="2">
+  <div class="question-num">第 4 题</div>
+  <div class="question-text">同学给你起了个外号，你不太喜欢。怎么办？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q4" value="0"><span class="option-label">A</span><span class="option-text">直接生气回怼</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q4" value="1"><span class="option-label">B</span><span class="option-text">忍着不说，但心里记仇</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q4" value="2"><span class="option-label">C</span><span class="option-text">找个合适的时机平静地跟 TA 说"我不太喜欢这个称呼，希望你以后别叫了"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q4" value="3"><span class="option-label">D</span><span class="option-text">也给 TA 起个难听的外号回击</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="5" data-section="同学关系" data-correct="2">
+  <div class="question-num">第 5 题</div>
+  <div class="question-text">你发现朋友最近成绩下滑得厉害，你猜他可能没好好学习。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q5" value="0"><span class="option-label">A</span><span class="option-text">直接跟他说"你怎么最近考这么差"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q5" value="1"><span class="option-label">B</span><span class="option-text">假装没注意到，朋友的事不关我事</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q5" value="2"><span class="option-label">C</span><span class="option-text">找机会约他出来玩，顺便聊聊天，看看他最近是不是有什么事</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q5" value="3"><span class="option-label">D</span><span class="option-text">跟他爸妈说，让家长管</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="6" data-section="同学关系" data-correct="0">
+  <div class="question-num">第 6 题</div>
+  <div class="question-text">班级分组活动，组长把你和另一个你不太熟的同学分到一组。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q6" value="0"><span class="option-label">A</span><span class="option-text">主动找对方聊聊，商量怎么合作</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q6" value="1"><span class="option-label">B</span><span class="option-text">等对方先来找你</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q6" value="2"><span class="option-label">C</span><span class="option-text">跟老师说"想换人"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q6" value="3"><span class="option-label">D</span><span class="option-text">各自做各自的，凑合交差</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="7" data-section="同学关系" data-correct="2">
+  <div class="question-num">第 7 题</div>
+  <div class="question-text">好朋友最近变得有点爱炫耀（比如新鞋、新手机、家里买的东西），你有点看不惯。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q7" value="0"><span class="option-label">A</span><span class="option-text">直接说"你别老炫耀了"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q7" value="1"><span class="option-label">B</span><span class="option-text">忍着不说，私下不再那么亲密</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q7" value="2"><span class="option-label">C</span><span class="option-text">找个机会跟 TA 聊聊："你这样让我有点不舒服"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q7" value="3"><span class="option-label">D</span><span class="option-text">在别的朋友面前说 TA</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="8" data-section="同学关系" data-correct="2">
+  <div class="question-num">第 8 题</div>
+  <div class="question-text">同学过生日邀请你，但你那天有事去不了。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q8" value="0"><span class="option-label">A</span><span class="option-text">直接说"不去"，理由也不多说</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q8" value="1"><span class="option-label">B</span><span class="option-text">撒谎说生病</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q8" value="2"><span class="option-label">C</span><span class="option-text">提前送个小礼物，跟对方说清楚原因</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q8" value="3"><span class="option-label">D</span><span class="option-text">当天突然不出现，也不解释</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== 老师关系 ===== -->
+<div class="section">
+  <div class="section-title"><span class="icon" style="background:#faf5ff;color:#805ad5;">🎓</span> 老师关系 <span class="section-meta">8 题 · 24 分</span></div>
+
+<div class="question" data-q="9" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 9 题</div>
+  <div class="question-text">课堂上被老师当众批评，说你某道题讲错了，全班都看着你。下课铃响了，你心里还是很不舒服。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q9" value="0"><span class="option-label">A</span><span class="option-text">下课就去找老师理论："你讲得也不一定对"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q9" value="1"><span class="option-label">B</span><span class="option-text">心里憋着，回家跟爸妈吐槽</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q9" value="2"><span class="option-label">C</span><span class="option-text">课后单独去办公室问老师：刚才那道题我的思路是这样的，请老师看看哪里有问题</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q9" value="3"><span class="option-label">D</span><span class="option-text">跟同学背后骂这个老师</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="10" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 10 题</div>
+  <div class="question-text">老师误会你抄了别人的作业，当着同学的面说"你这次作业不算成绩"。你怎么处理？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q10" value="0"><span class="option-label">A</span><span class="option-text">当面顶撞："我没抄，你凭什么这么说！"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q10" value="1"><span class="option-label">B</span><span class="option-text">忍着不说话，但心里发誓再也不交作业</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q10" value="2"><span class="option-label">C</span><span class="option-text">课后找老师单独说明情况；如果老师还是不信，可以问能不能调监控或对比双方草稿</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q10" value="3"><span class="option-label">D</span><span class="option-text">回家让爸妈来学校找老师</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="11" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 11 题</div>
+  <div class="question-text">你想去问老师一道题，但老师看起来很忙、心情也不太好，你有点不敢打扰。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q11" value="0"><span class="option-label">A</span><span class="option-text">不问了，自己看答案</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q11" value="1"><span class="option-label">B</span><span class="option-text">一直等到下课老师走了才后悔没问</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q11" value="2"><span class="option-label">C</span><span class="option-text">走过去先问"老师您现在方便吗？我想问一道题"，如果老师说不方便就先回去，过后再来</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q11" value="3"><span class="option-label">D</span><span class="option-text">让同学去问，然后告诉我就行</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="12" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 12 题</div>
+  <div class="question-text">你和老师在某件事的看法上不一样（比如你觉得这次作业布置得不合理）。怎么办？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q12" value="0"><span class="option-label">A</span><span class="option-text">当面跟老师说"你布置得不对"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q12" value="1"><span class="option-label">B</span><span class="option-text">跟几个同学私下一起抱怨</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q12" value="2"><span class="option-label">C</span><span class="option-text">课后找老师单独聊，说说你的想法，听听老师的考虑</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q12" value="3"><span class="option-label">D</span><span class="option-text">跟爸妈说，让爸妈去跟老师说</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="13" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 13 题</div>
+  <div class="question-text">你觉得老师对某个同学明显比对你好（比如提问、表扬、座位安排）。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q13" value="0"><span class="option-label">A</span><span class="option-text">心里认定老师偏心，从此不认真上他的课</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q13" value="1"><span class="option-label">B</span><span class="option-text">当面质问老师："你为什么总是偏向 XX"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q13" value="2"><span class="option-label">C</span><span class="option-text">先认真观察一段时间，确认是不是真的有偏心，再决定要不要跟老师或爸妈聊</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q13" value="3"><span class="option-label">D</span><span class="option-text">也去讨好老师，争取"被偏心"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="14" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 14 题</div>
+  <div class="question-text">你觉得老师讲得不够清楚，影响了大家理解，但你同桌说"老师讲得挺好的"。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q14" value="0"><span class="option-label">A</span><span class="option-text">不管别人，自己去问老师</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q14" value="1"><span class="option-label">B</span><span class="option-text">跟同桌说"你听不懂是你的事"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q14" value="2"><span class="option-label">C</span><span class="option-text">课后跟几个同学一起找老师问清楚</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q14" value="3"><span class="option-label">D</span><span class="option-text">直接跟老师说"你讲得不好"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="15" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 15 题</div>
+  <div class="question-text">老师表扬了你的同桌但没表扬你，其实你这次也做得不错。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q15" value="0"><span class="option-label">A</span><span class="option-text">主动跟老师说"我也做了"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q15" value="1"><span class="option-label">B</span><span class="option-text">回家跟爸妈抱怨</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q15" value="2"><span class="option-label">C</span><span class="option-text">不太在意，继续做好自己</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q15" value="3"><span class="option-label">D</span><span class="option-text">下次故意不认真，看看老师还夸不夸</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="16" data-section="老师关系" data-correct="2">
+  <div class="question-num">第 16 题</div>
+  <div class="question-text">老师让你负责一个小组的作业汇总，组里有同学不配合、不按时交。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q16" value="0"><span class="option-label">A</span><span class="option-text">直接把那个同学的名字报给老师</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q16" value="1"><span class="option-label">B</span><span class="option-text">自己包揽所有事</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q16" value="2"><span class="option-label">C</span><span class="option-text">单独找那个同学聊一下，看看 TA 是不是有困难</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q16" value="3"><span class="option-label">D</span><span class="option-text">在群里发"谁不交我就报谁"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== 学习与玩平衡 ===== -->
+<div class="section">
+  <div class="section-title"><span class="icon" style="background:#fff5f5;color:#e53e3e;">📚</span> 学习与玩平衡 <span class="section-meta">7 题 · 21 分</span></div>
+
+<div class="question" data-q="17" data-section="学习与玩平衡" data-correct="2">
+  <div class="question-num">第 17 题</div>
+  <div class="question-text">暑假还剩两周，你发现作业还有一大半没做。同学约你这周出去旅游 3 天。你怎么办？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q17" value="0"><span class="option-label">A</span><span class="option-text">不管作业，直接去玩，回来再赶</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q17" value="1"><span class="option-label">B</span><span class="option-text">直接拒绝旅游，全部时间赶作业</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q17" value="2"><span class="option-label">C</span><span class="option-text">跟同学商量把旅游缩短到 1-2 天，剩下的时间赶作业</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q17" value="3"><span class="option-label">D</span><span class="option-text">撒谎说作业已经做完了，去玩</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="18" data-section="学习与玩平衡" data-correct="2">
+  <div class="question-num">第 18 题</div>
+  <div class="question-text">这周末有一场你很想玩的游戏开服，但周一要考试。怎么办？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q18" value="0"><span class="option-label">A</span><span class="option-text">通宵玩，第二天考试随便考</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q18" value="1"><span class="option-label">B</span><span class="option-text">完全忍住不玩，安心复习</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q18" value="2"><span class="option-label">C</span><span class="option-text">跟爸妈商量，周五晚上玩到 11 点，周末两天集中复习</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q18" value="3"><span class="option-label">D</span><span class="option-text">考试前一天晚上玩到很晚</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="19" data-section="学习与玩平衡" data-correct="2">
+  <div class="question-num">第 19 题</div>
+  <div class="question-text">爸妈说这个周末不能出门，要在家复习。但同学约你一起去打球。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q19" value="0"><span class="option-label">A</span><span class="option-text">不顾爸妈反对，偷偷跑出去</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q19" value="1"><span class="option-label">B</span><span class="option-text">完全听爸妈的，但心里生闷气</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q19" value="2"><span class="option-label">C</span><span class="option-text">跟爸妈商量："我复习两个小时，然后再出去打一小时球行不行？"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q19" value="3"><span class="option-label">D</span><span class="option-text">撒谎说去同学家写作业，实际去打球</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="20" data-section="学习与玩平衡" data-correct="2">
+  <div class="question-num">第 20 题</div>
+  <div class="question-text">这次考试你考得特别好，比班里大部分同学都高。同学问起成绩，你怎么回应？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q20" value="0"><span class="option-label">A</span><span class="option-text">大声说出来，让大家都知道</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q20" value="1"><span class="option-label">B</span><span class="option-text">故意说考得很差，装低调</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q20" value="2"><span class="option-label">C</span><span class="option-text">实事求是地说出成绩，但如果同学明显不开心，就不多说</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q20" value="3"><span class="option-label">D</span><span class="option-text">嘲笑考得不好的同学</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="21" data-section="学习与玩平衡" data-correct="2">
+  <div class="question-num">第 21 题</div>
+  <div class="question-text">你发现自己最近上课总是走神，作业也想拖到很晚才做。但玩游戏、看视频时却很专注。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q21" value="0"><span class="option-label">A</span><span class="option-text">觉得自己不是学习的料，干脆放弃</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q21" value="1"><span class="option-label">B</span><span class="option-text">跟爸妈说想休学一段时间</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q21" value="2"><span class="option-label">C</span><span class="option-text">自己分析一下：是不是对学习的内容不感兴趣？还是压力太大？试着找老师或爸妈聊聊</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q21" value="3"><span class="option-label">D</span><span class="option-text">继续拖下去，等爸妈发现再说</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="22" data-section="学习与玩平衡" data-correct="2">
+  <div class="question-num">第 22 题</div>
+  <div class="question-text">周末爸妈出门了，留你一个人在家。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q22" value="0"><span class="option-label">A</span><span class="option-text">打游戏打到爸妈回来</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q22" value="1"><span class="option-label">B</span><span class="option-text">把作业全做完再玩</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q22" value="2"><span class="option-label">C</span><span class="option-text">安排好学习和游戏的时间（比如先做完作业再玩 1-2 小时）</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q22" value="3"><span class="option-label">D</span><span class="option-text">叫同学来家里玩</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="23" data-section="学习与玩平衡" data-correct="2">
+  <div class="question-num">第 23 题</div>
+  <div class="question-text">考试成绩下降了，爸妈有点失望但没说啥。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q23" value="0"><span class="option-label">A</span><span class="option-text">心里委屈但不说</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q23" value="1"><span class="option-label">B</span><span class="option-text">跟爸妈说"你们别管我"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q23" value="2"><span class="option-label">C</span><span class="option-text">找爸妈聊聊："我想跟你们说说成绩的事"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q23" value="3"><span class="option-label">D</span><span class="option-text">装作没事，先这样拖着</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== 校园霸凌应对 ===== -->
+<div class="section">
+  <div class="section-title"><span class="icon" style="background:#fffaf0;color:#dd6b20;">🛡️</span> 校园霸凌应对 <span class="section-meta">7 题 · 21 分</span></div>
+
+<div class="question" data-q="24" data-section="校园霸凌应对" data-correct="2">
+  <div class="question-num">第 24 题</div>
+  <div class="question-text">课间，一个高年级的同学堵住你，要你把零花钱给他"用一下"。他说"不给就让你好看"。你怎么办？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q24" value="0"><span class="option-label">A</span><span class="option-text">立刻给他，避免被打</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q24" value="1"><span class="option-label">B</span><span class="option-text">当面回怼："想得美！"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q24" value="2"><span class="option-label">C</span><span class="option-text">先稳住他，说"我现在没带钱，下次给你"，然后立刻去找老师或家长</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q24" value="3"><span class="option-label">D</span><span class="option-text">叫上自己的朋友一起来对付他</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="25" data-section="校园霸凌应对" data-correct="2">
+  <div class="question-num">第 25 题</div>
+  <div class="question-text">在教室里，有个同学故意把你的书包扔到地上，还笑你"动作慢得像蜗牛"。你怎么办？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q25" value="0"><span class="option-label">A</span><span class="option-text">立刻推他一下</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q25" value="1"><span class="option-label">B</span><span class="option-text">默默捡起来，忍了</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q25" value="2"><span class="option-label">C</span><span class="option-text">平静但严肃地跟他说："你这样做不对，请把书包还给我"，并告诉老师</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q25" value="3"><span class="option-label">D</span><span class="option-text">找自己哥哥/校外的人来"教训"他</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="26" data-section="校园霸凌应对" data-correct="2">
+  <div class="question-num">第 26 题</div>
+  <div class="question-text">你在班级群里看到有人发同学 A 的"丑照"，还配了嘲笑的文字。A 不在群里。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q26" value="0"><span class="option-label">A</span><span class="option-text">跟着发几个表情包，笑一下</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q26" value="1"><span class="option-label">B</span><span class="option-text">装作没看见</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q26" value="2"><span class="option-label">C</span><span class="option-text">在群里发"这样不太好，请删掉"，并私下告诉 A</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q26" value="3"><span class="option-label">D</span><span class="option-text">转发到自己朋友群让大家笑</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="27" data-section="校园霸凌应对" data-correct="2">
+  <div class="question-num">第 27 题</div>
+  <div class="question-text">你路过厕所，听到里面有几个声音在欺负一个低年级的同学（推搡、嘲笑）。那地方没有监控。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q27" value="0"><span class="option-label">A</span><span class="option-text">假装没听到，赶紧走开</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q27" value="1"><span class="option-label">B</span><span class="option-text">直接冲进去制止</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q27" value="2"><span class="option-label">C</span><span class="option-text">立刻去找老师或学校其他大人，过来处理</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q27" value="3"><span class="option-label">D</span><span class="option-text">等那几个同学走了，再去安慰被欺负的同学</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="28" data-section="校园霸凌应对" data-correct="2">
+  <div class="question-num">第 28 题</div>
+  <div class="question-text">你最近被同学欺负了好几次，回家后爸妈问你学校怎么样。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q28" value="0"><span class="option-label">A</span><span class="option-text">跟爸妈说"没事"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q28" value="1"><span class="option-label">B</span><span class="option-text">怕爸妈担心，编一些开心的事</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q28" value="2"><span class="option-label">C</span><span class="option-text">认真告诉爸妈：什么时候、被谁、怎么欺负的、你的感受</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q28" value="3"><span class="option-label">D</span><span class="option-text">让爸妈直接去学校找那些同学算账</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="29" data-section="校园霸凌应对" data-correct="2">
+  <div class="question-num">第 29 题</div>
+  <div class="question-text">有同学在背后说你坏话，你听到了一点。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q29" value="0"><span class="option-label">A</span><span class="option-text">当面找那个同学理论</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q29" value="1"><span class="option-label">B</span><span class="option-text">找自己哥们儿帮忙"出气"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q29" value="2"><span class="option-label">C</span><span class="option-text">先找老师或爸妈说说，让他们帮你分析</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q29" value="3"><span class="option-label">D</span><span class="option-text">也开始说对方坏话</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+<div class="question" data-q="30" data-section="校园霸凌应对" data-correct="2">
+  <div class="question-num">第 30 题</div>
+  <div class="question-text">你发现班级里有个同学总是一个人，看起来有点孤单。你会？</div>
+  <div class="options">
+    <label class="option" data-opt="0"><input type="radio" name="q30" value="0"><span class="option-label">A</span><span class="option-text">不关我事</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="1"><input type="radio" name="q30" value="1"><span class="option-label">B</span><span class="option-text">想跟 TA 玩但又怕别的同学说</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="2"><input type="radio" name="q30" value="2"><span class="option-label">C</span><span class="option-text">主动找机会跟 TA 聊聊天</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+    <label class="option" data-opt="3"><input type="radio" name="q30" value="3"><span class="option-label">D</span><span class="option-text">跟爸妈说"想让 TA 来家里玩"</span><span class="option-icon correct-icon">✅</span><span class="option-icon wrong-icon">❌</span></label>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== 问答题 ===== -->
+<div class="section">
+  <div class="section-title"><span class="icon" style="background:#f0fff4;color:#38a169;">✏️</span> 问答题 <span class="section-meta">1 题 · 10 分</span></div>
+
+<div class="question" data-q="31" data-section="问答题">
+  <div class="question-num">第 31 题（问答题 · 必答）</div>
+  <div class="question-text">在你心里，最近有没有遇到什么让你觉得"有点难处理"的事情？你当时是怎么做的？如果再来一次，你会怎么选？</div>
+  <div style="font-size:12px;color:#a0aec0;margin-bottom:4px;">没有标准答案，写出你真实的想法就好。建议至少写 5-8 句话。</div>
+  <div class="essay-area">
+    <textarea name="q31" placeholder="请在此作答……（建议至少 5-8 句话）"></textarea>
+  </div>
+</div>
+
+</div>
+
+<div class="submit-wrap">
+  <div class="score-bar" id="scoreBar">
+    <div class="total">得分：<span class="num" id="scoreNum">0</span> / 100</div>
+    <div class="detail" id="scoreDetail"></div>
+  </div>
+  <button type="button" class="submit-btn" id="submitBtn" onclick="handleSubmit()">提交答案</button>
+  <div class="hint" id="submitHint"></div>
+  <button type="button" class="answer-toggle-btn" id="viewAnswersBtn" onclick="showPwdOverlay()" style="margin-top:16px;">查看答案</button>
+</div>
+
+</form>
+
+<!-- 作答历史面板 -->
+<div class="history-panel" id="historyPanel">
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <h2>作答历史</h2>
+    <button type="button" class="clear-history-btn" onclick="clearAllAnswers()" title="清除所有历史答案">🗑 清除所有答案</button>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<!-- 密码弹窗 -->
+<div class="pwd-overlay" id="pwdOverlay">
+  <div class="pwd-box">
+    <h3>查看答案</h3>
+    <p>请输入密码查看答题结果</p>
+    <input type="password" id="pwdInput" placeholder="请输入密码" maxlength="20" onkeydown="if(event.key==='Enter')verifyPwd()">
+    <div class="pwd-error" id="pwdError">密码错误，请重试</div>
+    <div class="pwd-btns">
+      <button class="cancel" onclick="hidePwdOverlay()">取消</button>
+      <button class="confirm" onclick="verifyPwd()">确认</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ===== 欢迎页逻辑 =====
+let studentName = '';
+let studentAge = '';
+
+function showNameModal() {
+  document.getElementById('nameModal').classList.add('show');
+  document.getElementById('modalError').style.display = 'none';
+}
+
+function confirmStart() {
+  const name = document.getElementById('inputName').value.trim();
+  const age = document.getElementById('inputAge').value.trim();
+  if (!name || !age) {
+    document.getElementById('modalError').style.display = 'block';
+    return;
+  }
+  if (isNaN(age) || parseInt(age) < 1 || parseInt(age) > 120) {
+    document.getElementById('modalError').textContent = '请填写有效的年龄（1-120）';
+    document.getElementById('modalError').style.display = 'block';
+    return;
+  }
+  studentName = name;
+  studentAge = parseInt(age);
+
+  // 隐藏欢迎页和弹窗，显示答题主页面
+  document.getElementById('nameModal').classList.remove('show');
+  document.getElementById('welcomeOverlay').style.display = 'none';
+  document.querySelector('.container').style.display = 'block';
+
+  // 更新标题显示姓名
+  document.getElementById('headerTitle').textContent = studentName + '，开始答题吧！';
+  document.getElementById('headerSub').textContent = '年龄：' + studentAge + ' 岁 | 共 31 题，满分 100 分';
+}
+
+const CORRECT_PASSWORD_HASH = '3fb0a50e69a3bd10bd006726cf744fa50e779bd652b0dda9733137d78af42de5';
+const TOTAL_MC = 30;
+const MC_POINTS = 3;
+const MAX_MC = TOTAL_MC * MC_POINTS;
+const MAX_ESSAY = 10;
+const MAX_TOTAL = MAX_MC + MAX_ESSAY;
+
+const STORAGE_KEY = 'school_survey_history';
+
+// Section label lookup — 必须在使用前声明（避免 TDZ 错误）
+const SECTION_LABELS = {
+  '同学关系': '【同学关系】',
+  '老师关系': '【老师关系】',
+  '学习与玩平衡': '【学习与玩平衡】',
+  '校园霸凌应对': '【校园霸凌应对】',
+  '问答题': '【问答题】'
+};
+
+let submissionHistory = []; // 从 localStorage 恢复
+let isAnswersVisible = false;  // 必须在此声明，clearAllAnswers 会提前引用
+
+// 从 localStorage 加载历史
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) submissionHistory = JSON.parse(raw);
+  } catch(e) { submissionHistory = []; }
+}
+// 保存到 localStorage
+function saveHistory() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(submissionHistory));
+}
+// 清除所有历史
+function clearAllAnswers() {
+  if (!confirm('确定要清除所有历史答案吗？此操作不可撤销。')) return;
+  submissionHistory = [];
+  localStorage.removeItem(STORAGE_KEY);
+  renderHistoryPanel();
+  // 重新收起面板
+  document.getElementById('historyPanel').classList.remove('show');
+  isAnswersVisible = false;
+  showToast('已清除');
+}
+loadHistory();
+renderHistoryPanel(); // 加载后立即渲染 DOM（面板保持隐藏）
+
+function updateSubmitHint() {
+  const allQs = document.querySelectorAll('.question');
+  let answered = 0;
+  allQs.forEach(q => {
+    const qNum = parseInt(q.dataset.q);
+    if (qNum === 31) {
+      const ta = q.querySelector('textarea');
+      if (ta && ta.value.trim().length > 0) answered++;
+    } else {
+      const checked = q.querySelector('input[type="radio"]:checked');
+      if (checked) answered++;
+    }
+  });
+  const total = allQs.length;
+  const hint = document.getElementById('submitHint');
+  if (answered < total) {
+    hint.textContent = `已完成 ${answered}/${total} 题，还有 ${total - answered} 题未答`;
+  } else {
+    hint.textContent = '已全部完成，可以提交了';
+  }
+}
+
+// Radio change handler — fire updateSubmitHint whenever any radio is changed
+document.querySelectorAll('input[type="radio"]').forEach(radio => {
+  radio.addEventListener('change', updateSubmitHint);
+});
+
+// Textarea change handler
+const ta31 = document.querySelector('textarea[name="q31"]');
+if (ta31) ta31.addEventListener('input', updateSubmitHint);
+
+// Toast 提示
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function handleSubmit() {
+  const allQs = document.querySelectorAll('.question');
+  let unanswered = [];
+  let firstUnansweredEl = null;
+
+  allQs.forEach(q => {
+    const qNum = parseInt(q.dataset.q);
+    if (qNum === 31) {
+      const ta = q.querySelector('textarea');
+      if (!ta || ta.value.trim().length === 0) {
+        unanswered.push(qNum);
+        if (!firstUnansweredEl) firstUnansweredEl = q;
+      }
+    } else {
+      const checked = q.querySelector('input[type="radio"]:checked');
+      if (!checked) {
+        unanswered.push(qNum);
+        if (!firstUnansweredEl) firstUnansweredEl = q;
+      }
+    }
+  });
+
+  if (unanswered.length > 0) {
+    alert('还有 ' + unanswered.length + ' 道题未作答：第 ' + unanswered.join('、') + ' 题');
+    if (firstUnansweredEl) {
+      firstUnansweredEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstUnansweredEl.style.transition = 'background 0.3s';
+      firstUnansweredEl.style.background = '#fff3cd';
+      setTimeout(() => { firstUnansweredEl.style.background = ''; }, 1500);
+    }
+    return;
+  }
+
+  // Collect results
+  let mcScore = 0;
+  const answers = [];
+
+  allQs.forEach(q => {
+    const qNum = parseInt(q.dataset.q);
+    const section = q.dataset.section;
+    const correct = parseInt(q.dataset.correct);
+
+    if (qNum === 31) {
+      const ta = q.querySelector('textarea');
+      answers.push({
+        q: qNum,
+        section,
+        written: ta.value.trim(),
+        essayScore: 0,
+        score: 0,
+        correct: true
+      });
+    } else {
+      const checked = q.querySelector('input[type="radio"]:checked');
+      const selectedIdx = parseInt(checked.value);
+      const selectedText = checked.closest('.option').querySelector('.option-text').textContent;
+      const isCorrect = (selectedIdx === correct);
+      if (isCorrect) mcScore += MC_POINTS;
+      answers.push({
+        q: qNum,
+        section,
+        selectedIdx,
+        selectedText,
+        correctIdx: correct,
+        correct: isCorrect,
+        score: isCorrect ? MC_POINTS : 0
+      });
+    }
+  });
+
+  const totalScore = mcScore;
+
+  const entry = {
+    id: submissionHistory.length + 1,
+    totalScore,
+    mcScore,
+    answers,
+    name: studentName,
+    age: studentAge,
+    submittedAt: new Date().toLocaleString('zh-CN')
+  };
+  submissionHistory.push(entry);
+  saveHistory();
+
+  // Clear essay textarea after submit
+  const ta = document.querySelector('textarea[name="q31"]');
+  if (ta) ta.value = '';
+
+  // Update history panel (render but don't show)
+  renderHistoryPanel();
+
+  // Reset reveal classes
+  document.querySelectorAll('.option').forEach(o => {
+    o.classList.remove('correct-reveal', 'wrong-reveal');
+  });
+
+  // Clear all radio selections after successful submit
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+
+  updateSubmitHint();
+
+  // Show score bar
+  const scoreBar = document.getElementById('scoreBar');
+  const scoreNum = document.getElementById('scoreNum');
+  const scoreDetail = document.getElementById('scoreDetail');
+  scoreBar.style.display = 'block';
+  scoreNum.textContent = totalScore;
+  scoreDetail.textContent = '单选题 ' + mcScore + ' / ' + MAX_MC + ' 分（问答题不计入自动评分）';
+
+  showToast('提交成功');
+}
+
+// Render history panel: collapsed by default, click to expand
+function renderHistoryPanel() {
+  const el = document.getElementById('historyList');
+  if (!el) return;
+  if (submissionHistory.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#a0aec0;padding:20px;">暂无作答记录。提交后历史将显示在此处。</div>';
+    return;
+  }
+
+  let html = '';
+  const reversed = [...submissionHistory].reverse();
+  reversed.forEach(entry => {
+    html += '<div class="history-entry" id="hist-' + entry.id + '">';
+    html += '  <div class="history-entry-header">';
+    html += '    <div class="history-entry-info" onclick="toggleHistoryEntry(' + entry.id + ')">';
+    html += '      <span class="chevron">▶</span>';
+    html += '      <strong style="white-space:nowrap;">第 ' + entry.id + ' 次提交</strong>';
+    html += '      <span style="font-size:12px;color:#718096;white-space:nowrap;">' + (entry.name || '匿名') + '</span>';
+    html += '      <span style="font-size:12px;color:#a0aec0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + entry.submittedAt + '</span>';
+    html += '      <span style="font-size:12px;color:#667eea;font-weight:600;white-space:nowrap;margin-left:auto;">' + entry.mcScore + ' / ' + MAX_MC + '</span>';
+    html += '    </div>';
+    html += '    <button class="fill-btn" onclick="event.stopPropagation();fillHistoryToForm(' + entry.id + ')">填入</button>';
+    html += '  </div>';
+    html += '  <div class="history-entry-body"><div style="font-weight:600;font-size:14px;color:#667eea;margin-bottom:10px;">单选题得分：' + entry.mcScore + ' / ' + MAX_MC + '</div>';
+    html += buildAnswersDetail(entry.answers);
+    html += '  </div></div>';
+  });
+  el.innerHTML = html;
+}
+
+function toggleHistoryEntry(id) {
+  const el = document.getElementById('hist-' + id);
+  if (!el) return;
+  el.classList.toggle('open');
+}
+
+function fillHistoryToForm(id) {
+  const entry = submissionHistory.find(e => e.id === id);
+  if (!entry) return;
+
+  // 清除所有已有的颜色标注
+  document.querySelectorAll('.option').forEach(o => {
+    o.classList.remove('correct-reveal', 'wrong-reveal');
+  });
+
+  // 清空当前表单所有答案
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  const ta = document.querySelector('textarea[name="q31"]');
+  if (ta) ta.value = '';
+
+  // 填入答案 + 颜色标注
+  entry.answers.forEach(a => {
+    if (a.q === 31) {
+      const ta = document.querySelector('textarea[name="q31"]');
+      if (ta && a.written) ta.value = a.written;
+    } else {
+      // 选中该题的答案
+      const radio = document.querySelector('input[type="radio"][name="q' + a.q + '"][value="' + a.selectedIdx + '"]');
+      if (radio) radio.checked = true;
+
+      // 找到该题的 DOM 节点
+      const questionEl = document.querySelector('.question[data-q="' + a.q + '"]');
+      if (!questionEl) return;
+
+      // 选中项的颜色
+      const selOpt = questionEl.querySelector('.option[data-opt="' + a.selectedIdx + '"]');
+      if (a.correct) {
+        // 答对 → 绿色
+        if (selOpt) selOpt.classList.add('correct-reveal');
+      } else {
+        // 答错 → 选中项红色
+        if (selOpt) selOpt.classList.add('wrong-reveal');
+        // 正确答案 → 绿色
+        const corOpt = questionEl.querySelector('.option[data-opt="' + a.correctIdx + '"]');
+        if (corOpt) corOpt.classList.add('correct-reveal');
+      }
+    }
+  });
+
+  // 展开该条目，折叠其他
+  document.querySelectorAll('.history-entry').forEach(e => e.classList.remove('open'));
+  const el = document.getElementById('hist-' + id);
+  if (el) el.classList.add('open');
+
+  updateSubmitHint();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function buildAnswersDetail(answers) {
+  let html = '';
+  const sections = {};
+  answers.forEach(a => {
+    if (!sections[a.section]) sections[a.section] = [];
+    sections[a.section].push(a);
+  });
+  const sectionOrder = ['同学关系', '老师关系', '学习与玩平衡', '校园霸凌应对', '问答题'];
+
+  sectionOrder.forEach(sec => {
+    if (!sections[sec]) return;
+    html += '<div style="margin-bottom:12px;">';
+    html += '<div style="font-weight:700;font-size:14px;color:#667eea;padding:6px 0;border-bottom:1px solid #e2e8f0;margin-bottom:6px;">' + (SECTION_LABELS[sec] || sec) + '</div>';
+    sections[sec].forEach(a => {
+      if (a.q === 31) {
+        html += '<div style="padding:8px 0;border-bottom:1px solid #f7fafc;">';
+        html += '<div style="font-weight:600;font-size:13px;color:#4a5568;margin-bottom:4px;">第 31 题（问答题）</div>';
+        html += '<div style="font-size:13px;color:#4a5568;background:#f7fafc;padding:8px;border-radius:6px;white-space:pre-wrap;">' + (a.written || '未作答') + '</div>';
+        html += '</div>';
+      } else {
+        const icon = a.correct ? '✅' : '❌';
+        const cls = a.correct ? 'correct' : 'wrong';
+        const label = ['A', 'B', 'C', 'D'];
+        html += '<div class="answer-row">';
+        html += '<span class="q-label">第 ' + a.q + ' 题</span>';
+        html += '<span class="q-result ' + cls + '">' + icon + ' 选了 ' + label[a.selectedIdx] + '（' + a.selectedText.substring(0, 30) + '...）</span>';
+        html += '<span class="q-score">' + a.score + '分</span>';
+        html += '</div>';
+      }
+    });
+    html += '</div>';
+  });
+  return html;
+}
+
+// Password overlay
+function showPwdOverlay() {
+  document.getElementById('pwdOverlay').classList.add('show');
+  document.getElementById('pwdInput').value = '';
+  document.getElementById('pwdError').style.display = 'none';
+  setTimeout(() => document.getElementById('pwdInput').focus(), 100);
+}
+
+function hidePwdOverlay() {
+  document.getElementById('pwdOverlay').classList.remove('show');
+}
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPwd() {
+  const input = document.getElementById('pwdInput').value;
+  const inputHash = await sha256(input);
+  if (inputHash === CORRECT_PASSWORD_HASH) {
+    hidePwdOverlay();
+    showAnswers();
+  } else {
+    document.getElementById('pwdError').style.display = 'block';
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+  }
+}
+
+function showAnswers() {
+  isAnswersVisible = true;
+  const panel = document.getElementById('historyPanel');
+  panel.classList.add('show');
+  if (submissionHistory.length === 0) return;
+  // 默认折叠所有条目，用户点击"填入"按钮来查看
+  document.querySelectorAll('.history-entry').forEach(e => e.classList.remove('open'));
+  panel.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Initialize hint
+updateSubmitHint();
+</script>
+
+</body>
+</html>
